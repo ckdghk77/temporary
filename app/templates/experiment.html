@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+
+    <!-- read in js libraries -->
+    <script src="../static/lib/jspsych-6.3.1/jspsych.js"></script>
+    <script src="../static/lib/jquery-3.3.1/jquery.min.js"></script>
+
+    <script src="../static/js/nivturk-plugins.js" type="text/javascript"></script>
+
+    <!-- read in jsPsych plugins -->
+    <script src="../static/lib/jspsych-6.3.1/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="../static/lib/jspsych-6.3.1/plugins/jspsych-fullscreen.js"></script>
+
+    <script src="../static/lib/jspsych-6.3.1/plugins/jspsych-image-slider-response.js"></script>
+    <script src="../static/lib/jspsych-6.3.1/plugins/jspsych-call-function.js"></script>
+    <script src="../static/lib/jspsych-6.3.1/plugins/jspsych-html-button-response.js"></script>
+    <script src="../static/lib/jspsych-6.3.1/plugins/jspsych-preload.js"></script>
+
+    <!-- read in static variables for running experiment -->
+
+    <script src="../static/js/oneshot.js"></script>
+    <script src="../static/js/oneshot_triangle.js"></script>
+    <script src="../static/js/oneshot_cues.js"></script>
+    <script src="../static/js/oneshot_stimulus.js"></script>
+    <script src="../static/js/instructions.js"></script>
+    <script src="../static/js/load-model.js" type="text/javascript"></script>
+
+    <!-- read in stylesheets -->
+    <link href="../static/lib/jspsych-6.3.1/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+
+  </head>
+  <body>
+  </body>
+  <script>
+
+  //------------------------------------
+  // Messages and landing pages
+  //------------------------------------
+
+  var consentform = {
+    type: "html-button-response",
+    choices: ["I accept", "No thank you"],
+    stimulus: "<h1>CONSENT FORM</h1><hr><p><b>TITLE OF RESEARCH:</b> Behavioral Studies of Learning and Decision-making <br> <b>PRINCIPAL INVESTIGATOR</b>: Sang Wan Lee, Ph.D.<br><b>PRINCIPAL INVESTIGATOR’S DEPARTMENT</b>: Bio and Brain engineering</p><hr>"
+    +"<p>You are being invited to take part in a research study. Before you decide to participate in this study, it is important that you understand why the research is being done and what it will involve. Please take the time to read the following information carefully. Please contact the researcher if there is anything that is not clear or if you need more information.</p>"
+    +"<h2>Purpose of the research:</h2><p>With this research we hope to explore the following objectives related to human learning and decision-making:<ol type='I'><li>Understanding how humans learn about the associations.</li><li>Understanding how humans draw on this knowledge to make decisions in the environment.</li></ol></p>"
+    +"<h2>Study Procedures:</h2><p>In this experiment, you'll repeatedly be presented with images on your computer screen and asked to make decisions or responses using button-presses. At the conclusion of the experiment, you will receive monetary compensation determined in part by the decisions you make during the task.</p>"
+    +"<p>Your total expected time commitment for this study is 45 minutes.</p>"
+    +"<h2>Benefits and risks:</h2><p>You will not receive any direct benefit from your participating other than the monetary payment you will receive for participation and the possible enjoyable or rewarding aspects of participating in research.</p>"
+    +"<h2>Confidentiality:</h2><p>The research team will make every effort to protect your confidentiality, as required by law. Personally identifying data will remain strictly confidential. Immediately following data collection, your age, profession, ethnic classification, and any other personally identifying information, will be separated from the rest of the obtained data and replaced by a coded designation. Consent forms will be stored, separately, in the same manner. We will not include any information that will make it possible to identify you in any report we might publish.</p>"
+    +"<h2>Compensation:</h2><p>For this study, which is estimated to take 45 minutes, you will be compensated $6 for your participation plus an additional payment $2 based on the decisions you make during the experiment.</p>"
+    +"<h2>Who to contact with questions:</h2><p>1. PRINCIPAL INVESTIGATOR:<ul style=.list-style-type:none;.><li> Sang Wan Lee, PhD</li><li>	Korea Advanced Institute of Science and Technology</li><li>	Email: sangwan@kaist.ac.kr</li></ul></p>"
+    +"<hr><p>I understand the information that was presented and that:<blockquote>My participation is voluntary, and I may withdraw my consent and discontinue participation in the project at any time. My refusal to participate will not result in any penalty.</blockquote>By clicking the box below, I hereby give my consent to be the subject of your research.</p>",
+
+    on_finish: function(data){
+      document.body.style.overflowY = "hidden";
+      document.body.style.backgroundColor = '#d2d2d2'
+      if(data.response == 1){
+        //console.log(data.trial_type);
+        jsPsych.endExperiment();
+      }
+    }
+  }
+
+  // define welcome message
+  var welcome = {
+    type: "html-keyboard-response",
+    stimulus: "Welcome to the experiment. Press any key to begin.",
+    on_start: function(){
+      document.body.style.overflowY = "hidden";
+      document.body.style.backgroundColor = '#d2d2d2'
+    }
+  };
+
+  // define block end message
+  var show_block_end = {
+    type: "html-keyboard-response",
+    choices: jsPsych.NO_KEYS,
+    stimulus: "<p style='font-familiy:IBM Plex Sans Extrabold;font-size:24px;'>+</p>",
+    trial_duration: 3000,
+    on_finish: function(data){ // this is added here to re-randomise queues before the start of each new block
+      
+      next_round_num = (repetition_count%8)
+      session_num = parseInt(repetition_count/8)
+      //console.log("Session : " + session_num)
+      //console.log("Repetition : " + repetition_count)
+
+      //console.log("I'm Show Block_End")
+      //console.log(driving)
+      if((session_num >= 1) && (repetition_count%8 != 0)){
+        for (var u=0;u<3;u++) {
+        var cue_idx = unused_cue_idxes.indexOf(used_cue_idxes[u])
+        unused_cue_idxes.splice(cue_idx,1);
+      }
+
+        //console.log("OS/INCRE : " + main_os_type[next_round_num])
+        alloc_infos = alloc_all(os_type = main_os_type[next_round_num], n_or_p = main_n_or_p[next_round_num], driving=driving)
+        used_cue_idxes = jsPsych.randomization.repeat(alloc_infos.cue_idxes,1);
+        //used_cue_idxes = alloc_infos.cue_idxes;
+        
+        main_cue_allocation = alloc_infos.cue_allocation;
+        main_reward_allocation = alloc_infos.reward_allocation;
+
+        counter.block += 1;
+        counter.trial = 1;
+      }
+      else if((repetition_count%8 != 0)){
+        for (var u=0;u<3;u++) {
+        var cue_idx = unused_cue_idxes.indexOf(used_cue_idxes[u])
+        unused_cue_idxes.splice(cue_idx,1);
+      }
+        
+        //console.log("OS/INCRE : " + main_os_type[next_round_num])
+        alloc_infos = alloc_all(os_type = main_os_type[next_round_num], n_or_p = main_n_or_p[next_round_num], 0)
+        used_cue_idxes = jsPsych.randomization.repeat(alloc_infos.cue_idxes,1);
+        //used_cue_idxes = alloc_infos.cue_idxes;
+
+        main_cue_allocation = alloc_infos.cue_allocation;
+        main_reward_allocation = alloc_infos.reward_allocation;
+
+        counter.block += 1;
+        counter.trial = 1;
+      }
+    }
+  };
+
+  let driving = 1
+  var loaded_model = 0; // should be global variable
+  var session_end_msg = null; // connect load model and html-keyboard response
+
+  // for test progress bar
+  var load_session = {
+    type: 'load model',
+    session_num: parseInt(repetition_count/8),
+    driving: driving,
+    message: '<p>Please take a break while we load the next session.</p>',
+    
+    on_start: function(load_session){
+      // Save complete dataset to disk.
+      load_session.session_num = parseInt(repetition_count/8);
+      incomplete_save("{{workerId}}", "{{assignmentId}}", "{{hitId}}",  "{{a}}", "{{tp_a}}", "{{b}}", "{{tp_b}}", "{{c}}", "{{tp_c}}");
+
+    }
+  }
+
+  var show_session_end = {
+    type: "html-keyboard-response",
+    stimulus: "<p style='margin-top:50px;'>Press any key to start.</p>",
+    choices: jsPsych.ALL_KEYS,
+    trial_duration: null,
+    on_start: function(show_session_end){
+      show_session_end.stimulus = session_end_msg + show_session_end.stimulus;
+    },
+    on_finish: function(data){ // this is added here to re-randomise queues before the start of each new block
+
+      for (var u=0;u<3;u++) {
+        var cue_idx = unused_cue_idxes.indexOf(used_cue_idxes[u])
+        unused_cue_idxes.splice(cue_idx,1);
+      }
+
+      alloc_rounds_type = set_rounds_type()
+      main_os_type = alloc_rounds_type.os_type // list of 8 rounds
+      main_n_or_p = alloc_rounds_type.n_or_p
+
+      //console.log("I'm Show Session_End")
+      //console.log(driving)
+      
+      //console.log("OS/INCRE : " + main_os_type[0])
+      alloc_infos = alloc_all(os_type = main_os_type[0], n_or_p = main_n_or_p[0], driving=driving)
+
+      used_cue_idxes = jsPsych.randomization.repeat(alloc_infos.cue_idxes,1);
+      //used_cue_idxes = alloc_infos.cue_idxes
+
+      main_cue_allocation = alloc_infos.cue_allocation;
+      main_reward_allocation = alloc_infos.reward_allocation;
+
+      counter.block += 1;
+      counter.trial = 1;
+    }
+  }
+
+  var block_end = {
+    timeline: [show_block_end], 
+    //timeline: [load_session,show_block_end], //to test loading bar,
+
+    ///////////////// to test loading bar
+    on_timeline_start: function(){
+      repetition_count++;
+    }, 
+    
+  }  
+
+  var session_end = {
+    timeline: [load_session, show_session_end],
+    on_timeline_start: function(){
+      // call send_data() to send entire data and get response (send_data() in nivturk-plugins.js)
+      //send_data();
+      loaded_model = 0;
+    },
+    conditional_function: function() {
+      if((repetition_count%8)==0){
+        return true;
+      } else{
+        return false;
+      }
+    }
+  }
+ 
+
+  // define experiment end message
+  var expt_end = {
+    type: "html-keyboard-response",
+    stimulus: "<img src='"+inst_images[36]+"' width='"+(window.screen.width)+"' height='"+(window.screen.height)+"'></img>",
+    on_finish: function(){
+      document.removeEventListener('keydown', openFullScreen);
+    }
+  };
+
+  //------------------------------------
+  // Functions to turn fullscreen on/off
+  //------------------------------------
+
+  var page = document.documentElement;
+
+  function openFullScreen () {
+    if (page.requestFullscreen)
+        page.requestFullscreen();
+    else if (page.webkitRequestFullscreen) // Chrome, Safari (webkit)
+        page.webkitRequestFullscreen();
+    else if (page.mozRequestFullScreen) // Firefox
+        page.mozRequestFullScreen();
+    else if (page.msRequestFullscreen) // IE or Edge
+        page.msRequestFullscreen();
+  }
+
+  var fullscreen_on = {
+    type: "fullscreen",
+    fullscreen_mode: true,
+    message: '<p>The experiment will switch to full screen mode when you press the button below.</p><p>Where possible, please stay in full screen mode for the entire experiment.</p>'
+    , on_start: function(){
+      jsPsych.setProgressBar(0);
+    },
+    on_finish: function(){
+      (document.body).addEventListener('click',openFullScreen);
+    }
+  };
+
+  var fullscreen_off = {
+    type: "fullscreen",
+    fullscreen_mode: false
+  };
+
+  //------------------------------------
+  // Define and randomise experimental variables
+  //------------------------------------
+
+  // randomise cue images.
+  var alloc_rounds_type;
+  alloc_rounds_type = set_rounds_type()
+  var main_os_type = alloc_rounds_type.os_type // list of 8 rounds
+  var main_n_or_p = alloc_rounds_type.n_or_p
+  
+  var alloc_infos;
+
+  //console.log("OS/INCRE : " + main_os_type[0])
+  alloc_infos = alloc_all(os_type = main_os_type[0], n_or_p = main_n_or_p[0], 0)
+  var used_cue_idxes = jsPsych.randomization.repeat(alloc_infos.cue_idxes,1)
+  //var used_cue_idxes = alloc_infos.cue_idxes
+
+  var main_cue_allocation = alloc_infos.cue_allocation
+  var main_reward_allocation = alloc_infos.reward_allocation
+
+  // save highest rating values of each round for bonus round
+  var rating_rounds = [];
+
+  // set up block and trial counters
+  var counter = {};
+  counter.block = 1;
+  counter.trial = 1;
+  counter.n_blocks = 2;
+
+  //------------------------------------
+  // Define supportive blocks
+  //------------------------------------
+
+  var cursor_off = {
+      type: 'call-function',
+      func: function() {
+          document.body.style.cursor= "none";
+      }
+  }
+  var cursor_on = {
+      type: 'call-function',
+      func: function() {
+          document.body.style.cursor= "auto";
+      }
+  }
+
+  //------------------------------------
+  // Define experimental blocks
+  //------------------------------------
+
+
+  image_size = [256, 256]; // cue image size
+  disp_scale = 1.5; // for cue presentation
+  disp_scale_causalrating = 1.0; // cues size for hedonic and causal attribution ratings
+  disp_scale_keepingpicture = 0.55; // cue size for ratings for keeping pictures
+  // use natural size of reward image
+
+  var Timeout2 = null; // store timeout2 Id
+  var msg_timeout = null; // store msg timeout Id
+  var msg_overtime = 0;
+  var now_start_time = null;
+  var timeout2_start = null;
+  var msg_duration = 5000;  // msg_duration must be 5000
+  var timeout_duration = 20000;
+  msg_count = 0;
+  chance = 4; // chance must be 4
+
+  // define instructions and tutorial
+  var instruction_tutorial = {
+      type: "instructions",
+      pages: inst_images.slice(0,36),
+      oneshot_stimulus_dimensions: [image_size[0]*disp_scale, image_size[1]*disp_scale],
+      stimuli_display_duration: 700,
+      reward_display_duration: 2000,
+      lc_stimulus_height: image_size[1]*disp_scale_causalrating,
+      lc_stimulus_width: image_size[0]*disp_scale_causalrating,
+      lc_slider_width: (window.screen.width)*3/5,
+      lc_min: -5,
+      lc_max: 5,
+      lc_slider_start: 0,
+      lc_labels : ['-5','-4','-3','-2','-1','0','1','2','3','4','5'],
+      tri_stimulus_dimensions: [image_size[0]*disp_scale_keepingpicture, image_size[1]*disp_scale_keepingpicture],
+      css_classes: ['hide_cursor'],
+    }
+
+  // define observation step
+  var os_experim = {
+    randomize_order: true,
+    type: 'os_random',
+    os_cues: cue_images,
+    os_rewards: reward_images,
+    stimulus_dimensions: [image_size[0]*disp_scale, image_size[1]*disp_scale],
+    css_classes: ['hide_cursor'],
+    stimuli_display_duration: 700,
+    reward_display_duration: 2000,
+    cue_allocation: main_cue_allocation,
+    reward_allocation: main_reward_allocation,
+    on_start: function(os_experim){
+      os_experim.cue_allocation = main_cue_allocation;
+      os_experim.reward_allocation = main_reward_allocation;
+    },
+    on_finish: function(){
+      clearTimeout(Timeout2);
+      Timeout2 = null;
+      msg_overtime = 0;
+      document.addEventListener('keydown', openFullScreen);
+    }
+  };
+
+  //define liking rating step for first cue
+  var good_rating_1 = {
+    type: 'image-slider-response',
+    stimulus: cue_images[used_cue_idxes[0]],
+    stimulus_height: image_size[1]*disp_scale_causalrating,
+    stimulus_width: image_size[0]*disp_scale_causalrating,
+    slider_width: (window.screen.width)*3/5,
+    min: -5,
+    max: 5,
+    slider_start: 0,
+    trial_duration: 7000,
+    choice_duration: 4000,
+    render_on_canvas: false,
+    labels : ['-5','-4','-3','-2','-1','0','1','2','3','4','5'],
+    labels_description: ["(Dislike)","(Don't know)","(Like)"],
+    css_classes: ['hide_cursor'],
+    color: 'blue',
+    prompt:'<p style="color:blue;">*** How much do you like this picture? ***</p>'+'<p style="color:blue;">[&larr;/&rarr;] to change, [Y] to confirm.</p>'
+    ,on_start: function(good_rating_1){
+      good_rating_1.stimulus = cue_images[used_cue_idxes[0]]
+    }
+  }
+
+  //define liking rating step for second cue
+  var good_rating_2 = {
+    type: 'image-slider-response',
+    stimulus: cue_images[used_cue_idxes[1]],
+    stimulus_height: image_size[1]*disp_scale_causalrating,
+    stimulus_width: image_size[0]*disp_scale_causalrating,
+    slider_width: (window.screen.width)*3/5,
+    min: -5,
+    max: 5,
+    slider_start: 0,
+    trial_duration: 7000,
+    choice_duration: 4000,
+    render_on_canvas: false,
+    labels : ['-5','-4','-3','-2','-1','0','1','2','3','4','5'],
+    css_classes: ['hide_cursor'],
+    labels_description: ["(Dislike)","(Don't know)","(Like)"],
+    color: 'blue',
+    prompt: '<p style="color:blue;">*** How much do you like this picture? ***</p>'+'<p style="color:blue;">[&larr;/&rarr;] to change, [Y] to confirm.***</p>'
+    ,on_start: function(good_rating_2){
+      good_rating_2.stimulus = cue_images[used_cue_idxes[1]]
+    }
+  }
+
+  //define liking rating step for third cue
+  var good_rating_3 = {
+    type: 'image-slider-response',
+    stimulus: cue_images[used_cue_idxes[2]],
+    stimulus_height: image_size[1]*disp_scale_causalrating,
+    stimulus_width: image_size[0]*disp_scale_causalrating,
+    slider_width: (window.screen.width)*3/5,
+    min: -5,
+    max: 5,
+    slider_start: 0,
+    trial_duration: 7000,
+    choice_duration: 4000,
+    render_on_canvas: false,
+    labels : ['-5','-4','-3','-2','-1','0','1','2','3','4','5'],
+    css_classes: ['hide_cursor'],
+    labels_description: ["(Dislike)","(Don't know)","(Like)"],
+    color: 'blue',
+    prompt:'<p style="color:blue;">*** How much do you like this picture? ***</p>'+'<p style="color:blue;">[&larr;/&rarr;] to change, [Y] to confirm.***</p>'
+    ,on_start: function(good_rating_3){
+      good_rating_3.stimulus = cue_images[used_cue_idxes[2]]
+    }
+  }
+
+  //define causal rating step for first cue
+  var bad_rating_1 = {
+    type: 'image-slider-response',
+    stimulus: cue_images[used_cue_idxes[0]],
+    stimulus_height: image_size[1]*disp_scale_causalrating,
+    stimulus_width: image_size[0]*disp_scale_causalrating,
+    slider_width: (window.screen.width)*3/5,
+    min: 0,
+    max: 10,
+    slider_start: 5,
+    trial_duration: 7000,
+    choice_duration: 4000,
+    render_on_canvas: false,
+    labels : ['0','1','2','3','4','5','6','7','8','9','10'],
+    css_classes: ['hide_cursor'],
+    labels_description: ["(Not at all)","(Don't know)","(Very likely)"],
+    color: 'red',
+    prompt:'<p style="color:red;">*** How much do you think this causes a significant impact on the outcome? ***</p>'+'<p style="color:red;">[&larr;/&rarr;] to change, [Y] to confirm</p>'
+    ,on_start: function(bad_rating_1){
+      bad_rating_1.stimulus = cue_images[used_cue_idxes[0]]
+    }
+  }
+
+  //define causal rating step for second cue
+  var bad_rating_2 = {
+    type: 'image-slider-response',
+    stimulus: cue_images[used_cue_idxes[1]],
+    stimulus_height: image_size[1]*disp_scale_causalrating,
+    stimulus_width: image_size[0]*disp_scale_causalrating,
+    slider_width: (window.screen.width)*3/5,
+    min: 0,
+    max: 10,
+    slider_start: 5,
+    trial_duration: 7000,
+    choice_duration: 4000,
+    render_on_canvas: false,
+    labels : ['0','1','2','3','4','5','6','7','8','9','10'],
+    css_classes: ['hide_cursor'],
+    labels_description: ["(Not at all)","(Don't know)","(Very likely)"],
+    color: 'red',
+    prompt:'<p style="color:red;">*** How much do you think this causes a significant impact on the outcome? ***</p>'+'<p style="color:red;">[&larr;/&rarr;] to change, [Y] to confirm</p>'
+    ,on_start: function(bad_rating_2){
+      bad_rating_2.stimulus = cue_images[used_cue_idxes[1]]
+    }
+  }
+
+  //define causal rating step for third cue
+  var bad_rating_3 = {
+    type: 'image-slider-response',
+    stimulus: cue_images[used_cue_idxes[2]],
+    stimulus_height: image_size[1]*disp_scale_causalrating,
+    stimulus_width: image_size[0]*disp_scale_causalrating,
+    slider_width: (window.screen.width)*3/5,
+    min: 0,
+    max: 10,
+    slider_start: 5,
+    trial_duration: 7000,
+    choice_duration: 4000,
+    render_on_canvas: false,
+    labels : ['0','1','2','3','4','5','6','7','8','9','10'],
+    css_classes: ['hide_cursor'],
+    color: 'red',
+    labels_description: ["(Not at all)","(Don't know)","(Very likely)"],
+    prompt:'<p style="color:red;">*** How much do you think this causes a significant impact on the outcome? ***</p>'+'<p style="color:red;">[&larr;/&rarr;] to change, [Y] to confirm</p>'
+    ,on_start: function(bad_rating_3){
+      bad_rating_3.stimulus = cue_images[used_cue_idxes[2]]
+    }
+  }
+
+  //define bonus rating step
+  var tri_rating = {
+    type : 'os_tri_question',
+    notes: 'img/question_imgs/bonus.png',
+    stimuli: [cue_images[used_cue_idxes[0]],cue_images[used_cue_idxes[1]],cue_images[used_cue_idxes[2]]],
+    stimulus_dimensions: [image_size[0]*disp_scale_keepingpicture, image_size[1]*disp_scale_keepingpicture],
+    trial_listen_duration: 12000,
+    choice_listen_duration: 12000,
+    
+    on_finish: function(){
+      document.removeEventListener('keydown', openFullScreen);
+    }
+    ,on_start: function(tri_rating){
+      tri_rating.stimuli = [cue_images[used_cue_idxes[0]],cue_images[used_cue_idxes[1]],cue_images[used_cue_idxes[2]]]
+    }
+  }
+
+  //----------------------------------------
+  // Put it all in a timeline for one round
+  //----------------------------------------
+
+  // Add variables to timeline in relevant order
+
+  var main_timeline = [
+    cursor_off,
+    os_experim,                   // run a os_experim
+    good_rating_1,                // run a liking
+    good_rating_2,
+    good_rating_3,
+    bad_rating_1,
+    bad_rating_2,
+    bad_rating_3,
+    tri_rating,
+    block_end,                    // show block-end screen
+    session_end,
+
+  ];
+
+  var num_main_rounds = 40;
+  var num_rounds = num_main_rounds; // 1 bonus round
+  var repetition_count = 0;
+
+  var all_rounds = {
+    timeline: main_timeline,
+    repetitions: num_main_rounds,
+    on_timeline_finish: function(){
+
+      var cur_bar_value = jsPsych.getProgressBarCompleted();
+      jsPsych.setProgressBar(cur_bar_value + (1/num_rounds));
+    }
+  };
+
+  //------------------------------------
+  // Preload images
+  //------------------------------------
+
+  var preload_img = {
+    type: 'preload',
+    images: inst_images.concat(cue_images,reward_images),
+    max_load_time: 300000,
+    continue_after_error: true,
+
+    message:"<p>Experiment loading...</p>",
+
+  }
+
+  //----------------------------------
+  // Put it all in a timeline
+  //----------------------------------
+
+  var experiment_timeline = [];
+  experiment_timeline.push(preload_img,welcome,cursor_on,fullscreen_on,cursor_off)
+  experiment_timeline.push(instruction_tutorial)
+  experiment_timeline.push(all_rounds)
+  experiment_timeline.push(expt_end)
+  experiment_timeline.push(fullscreen_off)
+
+
+  //------------------------------------
+  // Set up and run the experiment
+  //------------------------------------
+
+  var low_quality = false;
+
+  jsPsych.init({
+    timeline: experiment_timeline,
+    show_progress_bar: true,
+    auto_update_progress_bar: false,
+    on_finish: function() {
+
+      document.body.style.overflowY = "visible";
+
+      // add interactions to the data variable
+      var interaction_data = jsPsych.data.getInteractionData();
+      jsPsych.data.get().addToLast({interactions: interaction_data.json()});
+
+      // Display jsPsych data in viewport.
+      //jsPsych.data.displayData();
+
+      // save local file for test
+      //jsPsych.data.get().localSave('json','test.json');
+
+
+      if (low_quality) {
+
+        // Save rejected dataset to disk.
+        redirect_reject("1004");
+
+      } else {
+
+        // Save complete dataset to disk.
+        redirect_success("{{workerId}}", "{{assignmentId}}", "{{hitId}}",  "{{a}}", "{{tp_a}}", "{{b}}", "{{tp_b}}", "{{c}}", "{{tp_c}}");
+
+      }
+    }
+  });
+
+
+
+  </script>
+</html>
